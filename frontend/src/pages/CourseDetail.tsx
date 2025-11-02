@@ -1,0 +1,379 @@
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
+import type { Question } from "@/types";
+import api from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import { CheckCircle2, XCircle, Loader2, Video, ArrowLeft } from "lucide-react";
+
+export default function CourseDetail() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [showVideoDialog, setShowVideoDialog] = useState(false);
+  const [videoPrompt, setVideoPrompt] = useState("");
+  const [generatingVideo, setGeneratingVideo] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(
+    null
+  );
+  const [showVideoModal, setShowVideoModal] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    fetchQuestions();
+  }, [id, user, navigate]);
+
+  const fetchQuestions = async () => {
+    try {
+      const { data } = await api.get(`/courses/${id}/questions`);
+      setQuestions(data);
+    } catch (error) {
+      console.error("Error fetching questions:", error);
+      setError("Failed to load questions");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAnswer = async (answer: string) => {
+    if (selectedAnswer) return; // Already answered
+
+    setSelectedAnswer(answer);
+    const correct = answer === questions[currentIndex].correct_answer;
+    setIsCorrect(correct);
+    setShowFeedback(true);
+
+    // Save answer to backend
+    try {
+      await api.post("/answers", {
+        question_id: questions[currentIndex].id,
+        selected_answer: answer,
+        is_correct: correct,
+      });
+    } catch (error) {
+      console.error("Error saving answer:", error);
+    }
+  };
+
+  const nextQuestion = () => {
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+      setSelectedAnswer(null);
+      setShowFeedback(false);
+      setIsCorrect(false);
+      setError(null);
+    }
+  };
+
+  const previousQuestion = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+      setSelectedAnswer(null);
+      setShowFeedback(false);
+      setIsCorrect(false);
+      setError(null);
+    }
+  };
+
+  const handleGenerateVideo = async () => {
+    if (!questions[currentIndex]) return;
+
+    setGeneratingVideo(true);
+    setError(null);
+    setVideoProgress(0);
+    setShowVideoDialog(false);
+
+    // Simulate progress while waiting for API response
+    const progressInterval = setInterval(() => {
+      setVideoProgress((prev) => Math.min(prev + 10, 90));
+    }, 3000);
+
+    try {
+      const { data } = await api.post("/videos", {
+        question_id: questions[currentIndex].id,
+        prompt: videoPrompt || undefined,
+      });
+      clearInterval(progressInterval);
+      setVideoProgress(100);
+      setVideoPrompt("");
+      setGeneratedVideoUrl(data.video_url);
+      setShowVideoModal(true);
+    } catch (error: any) {
+      clearInterval(progressInterval);
+      setError(error.response?.data?.error || "Failed to generate video");
+      setShowVideoDialog(true);
+    } finally {
+      setTimeout(() => {
+        setGeneratingVideo(false);
+        setVideoProgress(0);
+      }, 500);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto py-10">
+        <p className="text-center">Loading questions...</p>
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="container mx-auto py-10">
+        <Alert>
+          <AlertDescription>
+            No questions found for this course.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  const currentQuestion = questions[currentIndex];
+
+  return (
+    <div className="container mx-auto py-10">
+      <Button variant="ghost" onClick={() => navigate("/")} className="mb-6">
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to Courses
+      </Button>
+
+      <div className="mb-4">
+        <p className="text-sm text-muted-foreground">
+          Question {currentIndex + 1} of {questions.length}
+        </p>
+      </div>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>{currentQuestion.question_text}</CardTitle>
+            <Button variant="outline" onClick={() => setShowVideoDialog(true)}>
+              <Video className="mr-2 h-4 w-4" />
+              Generate Video
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {currentQuestion.options.map((option, idx) => {
+              const isSelected = selectedAnswer === option;
+              const isCorrectAnswer = option === currentQuestion.correct_answer;
+
+              let buttonVariant:
+                | "default"
+                | "outline"
+                | "secondary"
+                | "destructive" = "outline";
+              if (showFeedback) {
+                if (isCorrectAnswer) {
+                  buttonVariant = "default";
+                } else if (isSelected && !isCorrect) {
+                  buttonVariant = "destructive";
+                }
+              } else if (isSelected) {
+                buttonVariant = "secondary";
+              }
+
+              return (
+                <Button
+                  key={idx}
+                  variant={buttonVariant}
+                  className="w-full justify-start h-auto py-3 text-left"
+                  onClick={() => handleAnswer(option)}
+                  disabled={showFeedback}
+                >
+                  <span className="font-semibold mr-2">
+                    {String.fromCharCode(65 + idx)}.
+                  </span>
+                  {option}
+                  {showFeedback && isCorrectAnswer && (
+                    <CheckCircle2 className="ml-auto h-5 w-5" />
+                  )}
+                  {showFeedback && isSelected && !isCorrect && (
+                    <XCircle className="ml-auto h-5 w-5" />
+                  )}
+                </Button>
+              );
+            })}
+          </div>
+
+          {showFeedback && (
+            <div className="mt-6">
+              <Alert variant={isCorrect ? "default" : "destructive"}>
+                <AlertDescription>
+                  {isCorrect ? (
+                    <span className="flex items-center">
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Correct!
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Incorrect. The correct answer is:{" "}
+                      {currentQuestion.correct_answer}
+                    </span>
+                  )}
+                </AlertDescription>
+              </Alert>
+              {currentQuestion.explanation && (
+                <div className="mt-4 p-4 bg-muted rounded-md">
+                  <p className="text-sm font-semibold mb-2">Explanation:</p>
+                  <p className="text-sm">{currentQuestion.explanation}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex justify-between mt-6">
+            <Button
+              variant="outline"
+              onClick={previousQuestion}
+              disabled={currentIndex === 0}
+            >
+              Previous
+            </Button>
+            <Button
+              onClick={nextQuestion}
+              disabled={currentIndex === questions.length - 1}
+            >
+              Next
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={showVideoDialog} onOpenChange={setShowVideoDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Generate Video Explanation</DialogTitle>
+            <DialogDescription>
+              Add an optional prompt to customize the video explanation
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="prompt">Optional Prompt</Label>
+              <Textarea
+                id="prompt"
+                placeholder="e.g., Explain step by step with visual examples..."
+                value={videoPrompt}
+                onChange={(e) => setVideoPrompt(e.target.value)}
+                className="mt-2"
+              />
+            </div>
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowVideoDialog(false);
+                  setVideoPrompt("");
+                  setError(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleGenerateVideo} disabled={generatingVideo}>
+                {generatingVideo ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  "Generate Video"
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Progress Dialog */}
+      <Dialog open={generatingVideo} onOpenChange={() => {}}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Generating Video</DialogTitle>
+            <DialogDescription>
+              Please wait while we create your video explanation...
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Progress value={videoProgress} />
+            <p className="text-sm text-center text-muted-foreground">
+              {videoProgress}% complete
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Video Player Modal */}
+      <Dialog open={showVideoModal} onOpenChange={setShowVideoModal}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Video Explanation</DialogTitle>
+            <DialogDescription>
+              Your video explanation is ready!
+            </DialogDescription>
+          </DialogHeader>
+          {generatedVideoUrl && (
+            <div className="space-y-4">
+              <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                <video
+                  src={generatedVideoUrl}
+                  controls
+                  className="w-full h-full"
+                  autoPlay
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowVideoModal(false);
+                    setGeneratedVideoUrl(null);
+                  }}
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={() => window.open(generatedVideoUrl, "_blank")}
+                >
+                  Open in New Tab
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
