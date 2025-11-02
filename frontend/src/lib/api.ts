@@ -1,7 +1,11 @@
 import axios from "axios";
 import { supabase } from "./supabase";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+const API_URL = import.meta.env.VITE_API_URL;
+
+if (!API_URL) {
+  throw new Error("Missing API_URL environment variable");
+}
 
 const api = axios.create({
   baseURL: API_URL,

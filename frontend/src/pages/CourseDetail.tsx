@@ -61,15 +61,36 @@ export default function CourseDetail() {
   const handleAnswer = async (answer: string) => {
     if (selectedAnswer) return; // Already answered
 
+    const currentQuestion = questions[currentIndex];
+    if (!currentQuestion) return;
+
     setSelectedAnswer(answer);
-    const correct = answer === questions[currentIndex].correct_answer;
+
+    // Normalize answers for comparison
+    const normalizedAnswer = answer.trim();
+    const normalizedCorrectAnswer = currentQuestion.correct_answer.trim();
+
+    // Check if correct_answer is the full text match
+    let correct = normalizedAnswer === normalizedCorrectAnswer;
+
+    // If not a direct match, check if correct_answer is a letter (A, B, C, D)
+    // and match it to the option index
+    if (!correct && /^[A-D]$/i.test(normalizedCorrectAnswer)) {
+      const letterIndex =
+        normalizedCorrectAnswer.toUpperCase().charCodeAt(0) - 65;
+      if (letterIndex >= 0 && letterIndex < currentQuestion.options.length) {
+        correct =
+          normalizedAnswer === currentQuestion.options[letterIndex].trim();
+      }
+    }
+
     setIsCorrect(correct);
     setShowFeedback(true);
 
     // Save answer to backend
     try {
       await api.post("/answers", {
-        question_id: questions[currentIndex].id,
+        question_id: currentQuestion.id,
         selected_answer: answer,
         is_correct: correct,
       });
@@ -155,6 +176,19 @@ export default function CourseDetail() {
 
   const currentQuestion = questions[currentIndex];
 
+  // Helper function to get the display text for correct answer
+  const getCorrectAnswerDisplay = () => {
+    const normalizedCorrect = currentQuestion.correct_answer.trim();
+    // Check if correct_answer is a letter (A, B, C, D)
+    if (/^[A-D]$/i.test(normalizedCorrect)) {
+      const letterIndex = normalizedCorrect.toUpperCase().charCodeAt(0) - 65;
+      if (letterIndex >= 0 && letterIndex < currentQuestion.options.length) {
+        return currentQuestion.options[letterIndex];
+      }
+    }
+    return currentQuestion.correct_answer;
+  };
+
   return (
     <div className="container mx-auto py-10">
       <Button variant="ghost" onClick={() => navigate("/")} className="mb-6">
@@ -182,7 +216,18 @@ export default function CourseDetail() {
           <div className="space-y-3">
             {currentQuestion.options.map((option, idx) => {
               const isSelected = selectedAnswer === option;
-              const isCorrectAnswer = option === currentQuestion.correct_answer;
+              // Check if this option is the correct answer
+              // Handle both full text match and letter match (A, B, C, D)
+              const normalizedOption = option.trim();
+              const normalizedCorrect = currentQuestion.correct_answer.trim();
+              let isCorrectAnswer = normalizedOption === normalizedCorrect;
+
+              // If not a direct match, check if correct_answer is a letter
+              if (!isCorrectAnswer && /^[A-D]$/i.test(normalizedCorrect)) {
+                const letterIndex =
+                  normalizedCorrect.toUpperCase().charCodeAt(0) - 65;
+                isCorrectAnswer = idx === letterIndex;
+              }
 
               let buttonVariant:
                 | "default"
@@ -235,7 +280,7 @@ export default function CourseDetail() {
                     <span className="flex items-center">
                       <XCircle className="mr-2 h-4 w-4" />
                       Incorrect. The correct answer is:{" "}
-                      {currentQuestion.correct_answer}
+                      {getCorrectAnswerDisplay()}
                     </span>
                   )}
                 </AlertDescription>
