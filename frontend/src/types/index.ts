@@ -32,4 +32,5 @@ export interface Video {
   prompt?: string;
   share_token: string;
   created_at: string;
+  is_public?: boolean;
 }

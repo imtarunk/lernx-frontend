@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import VideoPlayer from "@/components/ui/video-player";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import api from "@/lib/api";
 import type { Video } from "@/types";
@@ -48,6 +49,16 @@ export default function PublicVideo() {
     );
   }
 
+  if (!video.is_public) {
+    return (
+      <div className="py-10">
+        <Alert>
+          <AlertDescription>This video is private.</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <div className="py-2 sm:py-4">
       <Card className="glass glass-edge backdrop-noise rounded-2xl">
@@ -62,16 +73,7 @@ export default function PublicVideo() {
                 <p className="text-sm text-muted-foreground">{video.prompt}</p>
               </div>
             )}
-            <div className="aspect-video bg-black rounded-lg overflow-hidden">
-              <video
-                src={video.video_url}
-                className="w-full h-full"
-                controls
-                playsInline
-                controlsList="nodownload"
-                preload="metadata"
-              />
-            </div>
+            <VideoPlayer src={video.video_url} />
           </div>
         </CardContent>
       </Card>

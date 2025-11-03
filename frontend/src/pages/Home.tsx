@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   Card,
@@ -7,27 +7,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { Course } from "@/types";
-import api from "@/lib/api";
+import { useCoursesStore } from "@/store/useCourses";
 
 export default function Home() {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { courses, loading, fetchCourses } = useCoursesStore();
 
   useEffect(() => {
     fetchCourses();
-  }, []);
-
-  const fetchCourses = async () => {
-    try {
-      const { data } = await api.get("/courses");
-      setCourses(data);
-    } catch (error) {
-      console.error("Error fetching courses:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [fetchCourses]);
 
   if (loading) {
     return (

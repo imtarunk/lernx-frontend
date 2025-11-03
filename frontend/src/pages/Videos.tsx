@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import type { Video } from "@/types";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import { Copy, ExternalLink, Play } from "lucide-react";
+import { Copy, ExternalLink, Play, Trash2, Eye, EyeOff } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import VideoPlayer from "@/components/ui/video-player";
+import { toast } from "sonner";
 
 export default function Videos() {
   const { user } = useAuth();
@@ -36,10 +38,19 @@ export default function Videos() {
     try {
       // We'll need to implement a user-specific endpoint
       // For now, we'll use a generic endpoint
+      console.debug("[Videos] Fetching videos …", new Date().toISOString());
       const { data } = await api.get("/videos");
+      console.debug(
+        "[Videos] Fetch success:",
+        Array.isArray(data) ? data.length : data
+      );
       setVideos(data);
-    } catch (error) {
-      console.error("Error fetching videos:", error);
+    } catch (error: any) {
+      console.error("[Videos] Fetch failed", {
+        error,
+        status: error?.response?.status,
+        payload: error?.response?.data,
+      });
     } finally {
       setLoading(false);
     }
@@ -49,6 +60,53 @@ export default function Videos() {
     const shareUrl = `${window.location.origin}/s/${token}`;
     navigator.clipboard.writeText(shareUrl);
     alert("Share link copied to clipboard!");
+  };
+
+  const deleteVideo = async (id: string) => {
+    console.group("[Videos] Delete request");
+    console.log("videoId:", id);
+    const ok = window.confirm(
+      "Delete this video? This action cannot be undone."
+    );
+    if (!ok) return;
+    try {
+      console.time("delete:/videos/:id");
+      await api.delete(`/videos/${id}`);
+      console.timeEnd("delete:/videos/:id");
+      console.log("Delete success");
+      setVideos((prev) => prev.filter((v) => v.id !== id));
+      if (activeVideo?.id === id) setActiveVideo(null);
+      toast.success("Video deleted");
+      console.groupEnd();
+    } catch (e: any) {
+      console.error("[Videos] Delete failed", {
+        error: e,
+        status: e?.response?.status,
+        payload: e?.response?.data,
+        videoId: id,
+      });
+      toast.error(e?.response?.data?.error || "Failed to delete video");
+      console.groupEnd();
+    }
+  };
+
+  const togglePublic = async (v: Video) => {
+    try {
+      const next = !Boolean(v.is_public);
+      console.debug("[Videos] Toggle visibility", v.id, "->", next);
+      const { data } = await api.patch(`/videos/${v.id}/public`, {
+        is_public: next,
+      });
+      setVideos((prev) =>
+        prev.map((it) =>
+          it.id === v.id ? { ...it, is_public: data?.is_public ?? next } : it
+        )
+      );
+      toast.success(next ? "Video set to public" : "Video set to private");
+    } catch (e: any) {
+      console.error("[Videos] Toggle failed", e?.response || e);
+      toast.error(e?.response?.data?.error || "Failed to toggle visibility");
+    }
   };
 
   if (loading) {
@@ -91,8 +149,21 @@ export default function Videos() {
                   <CardTitle className="text-lg line-clamp-1" title={title}>
                     {title}
                   </CardTitle>
-                  <CardDescription>
-                    Created {new Date(video.created_at).toLocaleDateString()}
+                  <CardDescription className="flex items-center justify-between">
+                    <span>
+                      Created {new Date(video.created_at).toLocaleDateString()}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border">
+                      {video.is_public ? (
+                        <>
+                          <Eye className="h-3 w-3" /> Public
+                        </>
+                      ) : (
+                        <>
+                          <EyeOff className="h-3 w-3" /> Private
+                        </>
+                      )}
+                    </span>
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -157,6 +228,26 @@ export default function Videos() {
                       >
                         <Copy className="h-4 w-4" />
                       </Button>
+                      <Button
+                        variant="outline"
+                        className="rounded-lg"
+                        onClick={() => togglePublic(video)}
+                        title="Toggle visibility"
+                      >
+                        {video.is_public ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        className="rounded-lg"
+                        onClick={() => deleteVideo(video.id)}
+                        title="Delete video"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                     <Link
                       to={`/s/${video.share_token}`}
@@ -187,16 +278,15 @@ export default function Videos() {
           </DialogHeader>
           {activeVideo && (
             <div className="space-y-4">
-              <div className="aspect-video bg-black rounded-lg overflow-hidden">
-                <video
-                  src={activeVideo.video_url}
-                  className="w-full h-full"
-                  controls
-                  playsInline
-                  controlsList="nodownload"
-                  preload="metadata"
-                  autoPlay
-                />
+              <VideoPlayer src={activeVideo.video_url} />
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="destructive"
+                  onClick={() => deleteVideo(activeVideo.id)}
+                  className="rounded-lg"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" /> Delete
+                </Button>
               </div>
             </div>
           )}

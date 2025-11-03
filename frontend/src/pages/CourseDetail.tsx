@@ -13,7 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import type { Question } from "@/types";
+import VideoPlayer from "@/components/ui/video-player";
+import { useQuestionsStore } from "@/store/useQuestions";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { CheckCircle2, XCircle, Loader2, Video, ArrowLeft } from "lucide-react";
@@ -22,12 +23,20 @@ export default function CourseDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const {
+    byCourseId,
+    loading,
+    error: qError,
+    fetchQuestions,
+    currentIndexByCourse,
+    setCurrentIndex,
+  } = useQuestionsStore();
+  const questions = byCourseId[id || ""] || [];
+  const currentIndex = currentIndexByCourse[id || ""] || 0;
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
-  const [loading, setLoading] = useState(true);
+
   const [showVideoDialog, setShowVideoDialog] = useState(false);
   const [videoPrompt, setVideoPrompt] = useState("");
   const [generatingVideo, setGeneratingVideo] = useState(false);
@@ -43,20 +52,12 @@ export default function CourseDetail() {
       navigate("/auth");
       return;
     }
-    fetchQuestions();
-  }, [id, user, navigate]);
+    if (id) fetchQuestions(id);
+  }, [id, user, navigate, fetchQuestions]);
 
-  const fetchQuestions = async () => {
-    try {
-      const { data } = await api.get(`/courses/${id}/questions`);
-      setQuestions(data);
-    } catch (error) {
-      console.error("Error fetching questions:", error);
-      setError("Failed to load questions");
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    if (qError) setError(qError);
+  }, [qError]);
 
   const handleAnswer = async (answer: string) => {
     if (selectedAnswer) return; // Already answered
@@ -101,7 +102,7 @@ export default function CourseDetail() {
 
   const nextQuestion = () => {
     if (currentIndex < questions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+      setCurrentIndex(id || "", currentIndex + 1);
       setSelectedAnswer(null);
       setShowFeedback(false);
       setIsCorrect(false);
@@ -111,7 +112,7 @@ export default function CourseDetail() {
 
   const previousQuestion = () => {
     if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
+      setCurrentIndex(id || "", currentIndex - 1);
       setSelectedAnswer(null);
       setShowFeedback(false);
       setIsCorrect(false);
@@ -406,14 +407,7 @@ export default function CourseDetail() {
           </DialogHeader>
           {generatedVideoUrl && (
             <div className="space-y-4">
-              <div className="aspect-video bg-black rounded-lg overflow-hidden">
-                <video
-                  src={generatedVideoUrl}
-                  controls
-                  className="w-full h-full"
-                  autoPlay
-                />
-              </div>
+              <VideoPlayer src={generatedVideoUrl} />
               <div className="flex justify-end space-x-2">
                 <Button
                   variant="outline"
