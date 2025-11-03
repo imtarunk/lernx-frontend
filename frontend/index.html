@@ -8,14 +8,16 @@
   </head>
   <body>
     <script>
-      // Prevent FOUC (Flash of Unstyled Content)
-      const theme = localStorage.getItem("theme") || "system";
+      // Prevent FOUC (Flash of Unstyled Content) and default to dark
+      const theme = localStorage.getItem("theme") || "dark";
       if (
         theme === "dark" ||
         (theme === "system" &&
           window.matchMedia("(prefers-color-scheme: dark)").matches)
       ) {
         document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
       }
     </script>
     <div id="root"></div>

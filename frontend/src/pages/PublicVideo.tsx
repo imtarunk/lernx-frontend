@@ -32,7 +32,7 @@ export default function PublicVideo() {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-10">
+      <div className="py-10">
         <p className="text-center">Loading video...</p>
       </div>
     );
@@ -40,7 +40,7 @@ export default function PublicVideo() {
 
   if (error || !video) {
     return (
-      <div className="container mx-auto py-10">
+      <div className="py-10">
         <Alert variant="destructive">
           <AlertDescription>{error || "Video not found"}</AlertDescription>
         </Alert>
@@ -49,8 +49,8 @@ export default function PublicVideo() {
   }
 
   return (
-    <div className="container mx-auto py-10">
-      <Card>
+    <div className="py-2 sm:py-4">
+      <Card className="glass glass-edge backdrop-noise rounded-2xl">
         <CardHeader>
           <CardTitle>Video Explanation</CardTitle>
         </CardHeader>
@@ -63,11 +63,13 @@ export default function PublicVideo() {
               </div>
             )}
             <div className="aspect-video bg-black rounded-lg overflow-hidden">
-              <iframe
+              <video
                 src={video.video_url}
                 className="w-full h-full"
-                allowFullScreen
-                title="Video explanation"
+                controls
+                playsInline
+                controlsList="nodownload"
+                preload="metadata"
               />
             </div>
           </div>

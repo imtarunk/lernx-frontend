@@ -67,3 +67,75 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Page background: subtle radial gradients + vignette */
+  .page-bg {
+    background-image: radial-gradient(
+        1200px 600px at 100% -20%,
+        hsl(var(--primary) / 0.06) 0%,
+        transparent 60%
+      ),
+      radial-gradient(
+        1000px 500px at -10% 20%,
+        hsl(var(--accent) / 0.06) 0%,
+        transparent 60%
+      ),
+      linear-gradient(
+        180deg,
+        hsl(var(--background)) 0%,
+        hsl(var(--background)) 100%
+      );
+    background-attachment: fixed;
+  }
+
+  /* Fine noise overlay for depth (use on wrappers) */
+  .backdrop-noise {
+    position: relative;
+  }
+  .backdrop-noise::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='0 0 0 0.025'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.7;
+    mix-blend-mode: soft-light;
+    border-radius: inherit;
+  }
+
+  /* Glass surfaces */
+  .glass {
+    @apply bg-white/40 dark:bg-white/10 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-sm;
+  }
+
+  .glass-strong {
+    @apply bg-white/50 dark:bg-white/15 backdrop-blur-2xl border border-white/40 dark:border-white/15 shadow;
+  }
+
+  .glass-hover {
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 hover:ring-1 hover:ring-white/30 dark:hover:ring-white/20;
+  }
+
+  /* Soft inner highlight on top edge */
+  .glass-edge {
+    position: relative;
+  }
+  .glass-edge::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.6),
+      transparent
+    );
+    opacity: 0.7;
+    border-top-left-radius: inherit;
+    border-top-right-radius: inherit;
+  }
+}

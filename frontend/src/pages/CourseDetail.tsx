@@ -156,7 +156,7 @@ export default function CourseDetail() {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-10">
+      <div className="py-10">
         <p className="text-center">Loading questions...</p>
       </div>
     );
@@ -164,7 +164,7 @@ export default function CourseDetail() {
 
   if (questions.length === 0) {
     return (
-      <div className="container mx-auto py-10">
+      <div className="py-10">
         <Alert>
           <AlertDescription>
             No questions found for this course.
@@ -190,8 +190,8 @@ export default function CourseDetail() {
   };
 
   return (
-    <div className="container mx-auto py-10">
-      <Button variant="ghost" onClick={() => navigate("/")} className="mb-6">
+    <div className="py-2 sm:py-4">
+      <Button variant="ghost" onClick={() => navigate("/")} className="mb-4">
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back to Courses
       </Button>
@@ -202,7 +202,7 @@ export default function CourseDetail() {
         </p>
       </div>
 
-      <Card className="mb-6">
+      <Card className="mb-6 glass glass-edge backdrop-noise rounded-2xl">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>{currentQuestion.question_text}</CardTitle>
@@ -248,7 +248,7 @@ export default function CourseDetail() {
                 <Button
                   key={idx}
                   variant={buttonVariant}
-                  className="w-full justify-start h-auto py-3 text-left"
+                  className="w-full justify-start h-auto py-3 text-left rounded-xl"
                   onClick={() => handleAnswer(option)}
                   disabled={showFeedback}
                 >
@@ -286,7 +286,7 @@ export default function CourseDetail() {
                 </AlertDescription>
               </Alert>
               {currentQuestion.explanation && (
-                <div className="mt-4 p-4 bg-muted rounded-md">
+                <div className="mt-4 p-4 glass rounded-xl">
                   <p className="text-sm font-semibold mb-2">Explanation:</p>
                   <p className="text-sm">{currentQuestion.explanation}</p>
                 </div>
