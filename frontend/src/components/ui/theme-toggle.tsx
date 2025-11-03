@@ -12,9 +12,9 @@ import {
 export function ThemeToggle() {
   const [theme, setTheme] = React.useState<"light" | "dark" | "system">(() => {
     if (typeof window !== "undefined") {
-      return (localStorage.getItem("theme") as any) || "system";
+      return (localStorage.getItem("theme") as any) || "dark";
     }
-    return "system";
+    return "dark";
   });
 
   React.useEffect(() => {
@@ -29,10 +29,12 @@ export function ThemeToggle() {
         : "light";
 
       root.classList.add(systemTheme);
+      localStorage.setItem("theme", "system");
       return;
     }
 
     root.classList.add(theme);
+    localStorage.setItem("theme", theme);
   }, [theme]);
 
   return (

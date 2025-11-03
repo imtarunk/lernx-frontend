@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Button as NeonButton } from "@/components/ui/neon-button";
 import {
   Dialog,
   DialogContent,
@@ -202,11 +203,24 @@ export default function CourseDetail() {
         </p>
       </div>
 
-      <Card className="mb-6 glass glass-edge backdrop-noise rounded-2xl">
+      <Card className="mb-6 glass glass-edge backdrop-noise rounded-2xl overflow-hidden">
+        <div className="aspect-video relative">
+          <img
+            src="/thumn.png"
+            alt="Course"
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black/10" />
+        </div>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>{currentQuestion.question_text}</CardTitle>
-            <Button variant="outline" onClick={() => setShowVideoDialog(true)}>
+
+            <Button
+              variant="outline"
+              onClick={() => setShowVideoDialog(true)}
+              className="hover:bg-white hover:text-black"
+            >
               <Video className="mr-2 h-4 w-4" />
               Generate Video
             </Button>

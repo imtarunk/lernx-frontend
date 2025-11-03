@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { Home, Video, LogOut, LogIn } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import LoadingOverlay from "@/components/LoadingOverlay";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
@@ -20,7 +21,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="glass glass-edge backdrop-noise rounded-xl px-4 py-3 border flex items-center justify-between">
             <Link to="/" className="text-2xl font-semibold tracking-tight">
               <span className="bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
-                SAT Study Platform
+                Lernx
               </span>
             </Link>
             <div className="flex items-center gap-1 sm:gap-2">
@@ -62,6 +63,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
       <main className="container mx-auto px-4 pb-16 pt-6">{children}</main>
+      <LoadingOverlay />
     </div>
   );
 }

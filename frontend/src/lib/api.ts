@@ -1,4 +1,5 @@
 import axios from "axios";
+import { startLoading, stopLoading } from "./loader";
 import { supabase } from "./supabase";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -13,6 +14,7 @@ const api = axios.create({
 
 // Add auth token to requests
 api.interceptors.request.use(async (config) => {
+  startLoading();
   try {
     const {
       data: { session },
@@ -26,5 +28,16 @@ api.interceptors.request.use(async (config) => {
   }
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => {
+    stopLoading();
+    return response;
+  },
+  (error) => {
+    stopLoading();
+    return Promise.reject(error);
+  }
+);
 
 export default api;
