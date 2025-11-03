@@ -1,7 +1,11 @@
 {
   "buildCommand": "pnpm install && pnpm build",
-  "outputDirectory": "/dist",
+  "outputDirectory": "dist",
   "devCommand": "pnpm dev",
   "installCommand": "pnpm install",
-  "framework": "vite"
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/assets/(.*)", "destination": "/assets/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
