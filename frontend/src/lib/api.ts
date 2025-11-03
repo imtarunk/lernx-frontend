@@ -14,7 +14,8 @@ const api = axios.create({
 
 // Add auth token to requests
 api.interceptors.request.use(async (config) => {
-  startLoading();
+  const skipLoader = (config.headers as any)?.["x-loader-skip"] === "true";
+  if (!skipLoader) startLoading();
   try {
     const {
       data: { session },
@@ -31,11 +32,15 @@ api.interceptors.request.use(async (config) => {
 
 api.interceptors.response.use(
   (response) => {
-    stopLoading();
+    const skipLoader =
+      (response.config.headers as any)?.["x-loader-skip"] === "true";
+    if (!skipLoader) stopLoading();
     return response;
   },
   (error) => {
-    stopLoading();
+    const skipLoader =
+      (error?.config?.headers as any)?.["x-loader-skip"] === "true";
+    if (!skipLoader) stopLoading();
     return Promise.reject(error);
   }
 );

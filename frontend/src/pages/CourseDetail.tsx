@@ -90,11 +90,15 @@ export default function CourseDetail() {
 
     // Save answer to backend
     try {
-      await api.post("/answers", {
-        question_id: currentQuestion.id,
-        selected_answer: answer,
-        is_correct: correct,
-      });
+      await api.post(
+        "/answers",
+        {
+          question_id: currentQuestion.id,
+          selected_answer: answer,
+          is_correct: correct,
+        },
+        { headers: { "x-loader-skip": "true" } }
+      );
     } catch (error) {
       console.error("Error saving answer:", error);
     }
