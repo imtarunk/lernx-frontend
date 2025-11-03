@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Button as NeonButton } from "@/components/ui/neon-button";
 import {
   Dialog,
   DialogContent,
@@ -213,8 +212,10 @@ export default function CourseDetail() {
           <div className="absolute inset-0 bg-black/10" />
         </div>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>{currentQuestion.question_text}</CardTitle>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <CardTitle className="font-normal text-lg sm:text-xl md:text-2xl leading-relaxed">
+              {currentQuestion.question_text}
+            </CardTitle>
 
             <Button
               variant="outline"
@@ -262,7 +263,7 @@ export default function CourseDetail() {
                 <Button
                   key={idx}
                   variant={buttonVariant}
-                  className="w-full justify-start h-auto py-3 text-left rounded-xl"
+                  className="w-full justify-start h-auto py-3 text-left rounded-xl text-base sm:text-[1rem] md:text-lg"
                   onClick={() => handleAnswer(option)}
                   disabled={showFeedback}
                 >
